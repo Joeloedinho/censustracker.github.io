@@ -26,6 +26,7 @@
 
           <button class="btn btn-primary btn-block mb-2" style="background-color: white; color: black" onclick="displayMaleChildrenAbove21()">Male Children Above 21</button>
           <button class="btn btn-primary btn-block " style="background-color: white; color: black" onclick="displayFemaleChildrenAbove21()">Female Children Above 21</button>
+          <button class="btn btn-primary btn-block " style="background-color: white; color: black" onclick="displayTotalUsersPerRegion()">Stats Per Region</button>
 
         </div>
       </div>
@@ -41,6 +42,10 @@
         <div id="adminStats" class="admin-stats">
           <!-- Admin Statistics Table will be displayed here -->
         </div>
+         <!-- Display Area for Total Users per Region -->
+          <div id="totalUsersPerRegion" class="display-area mt-4">
+            <!-- Content will be updated here -->
+          </div>
       </div>
     </div>
   </div>
@@ -320,6 +325,80 @@
 
       adminStats.innerHTML = statsTableHTML;
     }
+
+    // Function to fetch total users per region
+    async function fetchTotalUsersPerRegion() {
+      const totalUsersPerRegion = {};
+      const querySnapshot = await getDocs(collection(db, 'data'));
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const region = data.city;
+
+        if (!totalUsersPerRegion[region]) {
+          totalUsersPerRegion[region] = 0;
+        }
+
+        totalUsersPerRegion[region]++;
+      });
+
+      return totalUsersPerRegion;
+    }
+
+   // Function to fetch total users per region data from Firestore
+  async function fetchTotalUsersPerRegionData() {
+    const totalUsersPerRegionData = {};
+    const querySnapshot = await getDocs(collection(db, 'data'));
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const region = data.city;
+
+      if (!totalUsersPerRegionData[region]) {
+        totalUsersPerRegionData[region] = {
+          totalUsers: 0,
+        };
+      }
+
+      // Update total users count per region
+      totalUsersPerRegionData[region].totalUsers += 1;
+    });
+
+    return totalUsersPerRegionData;
+  }
+
+  // Function to display total users per region data
+  window.displayTotalUsersPerRegion = async function () {
+    const adminStats = document.getElementById("displayArea");
+    const totalUsersPerRegionData = await fetchTotalUsersPerRegionData();
+
+    let statsTableHTML = '';
+
+    statsTableHTML += `
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Total Users</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(totalUsersPerRegionData).map(([region, data]) => `
+            <tr>
+              <td>${region}</td>
+              <td>${data.totalUsers}</td>
+            </tr>
+          `).join('')}
+          <tr>
+            <td><strong>Total</strong></td>
+            <td><strong>${Object.values(totalUsersPerRegionData).reduce((total, data) => total + data.totalUsers, 0)}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    adminStats.innerHTML = statsTableHTML;
+  }
 
   </script>
 </body>
