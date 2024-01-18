@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="census-tracker.css">
+    <title>Census Tracker</title>
+</head>
+<body>
+
+  <div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+      <div class="col-md-8">
+        <div class="census-form">
+          <!-- Form 1: Basic Info -->
+          <form id="basicInfoForm">
+            <h2 class="text-center mb-4">Basic Information</h2>
+            <div class="form-group">
+              <label for="name">Name:</label>
+              <input type="text" class="form-control" id="name" required>
+            </div>
+            <div class="form-group">
+              <label for="Date Of Birth">Date Of Birth:</label>
+              <input type="date" class="form-control" id="dob" required>
+            </div>
+            <div class="form-group">
+              <label for="address">Address:</label>
+              <input type="text" class="form-control" id="address" required>
+            </div>
+            <div class="form-group">
+                <label for="city">Region:</label>
+                <select class="form-control" id="city" required>
+                  <option value="North West">North West</option>
+                  <option value="South West">South West</option>
+                  <option value="Litoral">Litoral</option>
+                  <option value="East">East</option>
+                  <option value="South">South</option>
+                  <option value="Far North">East</option>
+                  <option value="North">North</option>
+                  <!-- Add more options as needed -->
+                </select>
+            </div>
+            <div class="form-group text-center">
+              <button type="button" class="btn btn-primary btn-lg" onclick="showChildrenForm()">Next</button>
+            </div>
+          </form>
+
+          <!-- Form 2: Children -->
+          <form id="childrenForm" style="display: none;">
+            <h2 class="text-center mb-4">Children Information</h2>
+            <div class="form-group">
+              <label for="numFemales">Number of Female Children:</label>
+              <input type="number" value="0" class="form-control" id="numFemales" required>
+            </div>
+            <div class="form-group">
+              <label for="numMales">Number of Male Children:</label>
+              <input type="number" value="0" class="form-control" id="numMales" required>
+            </div>
+            <div class="form-group">
+              <label for="numMaleChildrenAbove21">Number of Male Children Above 21:</label>
+              <input type="number" value="0" class="form-control" id="numMaleChildrenAbove21" required>
+            </div>
+            <div class="form-group">
+              <label for="numMaleChildrenBelow21">Number of Male Children Below 21:</label>
+              <input type="number" value="0" class="form-control" id="numMaleChildrenBelow21" required>
+            </div>
+             <div class="form-group">
+              <label for="numFemaleChildrenAbove21">Number of Female Children Above 21:</label>
+              <input type="number" value="0" class="form-control" id="numFemaleChildrenAbove21" required>
+            </div>
+            <div class="form-group">
+              <label for="numFemaleChildrenBelow21">Number of Female Children Below 21:</label>
+              <input type="number" value="0" class="form-control" id="numFemaleChildrenBelow21" required>
+            </div>
+            <div class="form-group text-center">
+              <button type="button" class="btn btn-primary btn-lg" onclick="showBasicInfoForm()">Previous</button>
+              <button type="button" class="btn btn-success btn-lg" onclick="submitForm()">Submit</button>
+            </div>
+            <div id="success">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
+  <script src="census-tracker.js"></script>
+
+  <script>
+    function showChildrenForm() {
+      document.getElementById('basicInfoForm').style.display = 'none';
+      document.getElementById('childrenForm').style.display = 'block';
+    }
+
+    function showBasicInfoForm() {
+      document.getElementById('childrenForm').style.display = 'none';
+      document.getElementById('basicInfoForm').style.display = 'block';
+    }
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyDF2ICAzg43NayIW4c4Ca58G9Mih2fI-JU",
+      authDomain: "censu-adbbe.firebaseapp.com",
+      projectId: "censu-adbbe",
+      storageBucket: "censu-adbbe.appspot.com",
+      messagingSenderId: "407667712322",
+      appId: "1:407667712322:web:dc3a1f21377f69d20f68db",
+      measurementId: "G-JBGE0CMNC7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.submitForm = async function() {
+      const name = document.getElementById('name').value;
+      const address = document.getElementById('address').value;
+      const city = document.getElementById('city').value;
+      const numFemales = document.getElementById('numFemales').value;
+      const numMales = document.getElementById('numMales').value;
+      const numMaleChildrenAbove21 = document.getElementById('numMaleChildrenAbove21').value;
+      const numMaleChildrenBelow21 = document.getElementById('numMaleChildrenBelow21').value;
+      const numFemaleChildrenAbove21 = document.getElementById('numFemaleChildrenAbove21').value;
+      const numFemaleChildrenBelow21 = document.getElementById('numFemaleChildrenBelow21').value;
+      const dateOfBirth = document.getElementById('dob').value;
+
+      // Function to calculate age based on the date of birth
+      function calculateAge(dateOfBirth) {
+      const currentDate = new Date();
+      const dob = new Date(dateOfBirth);
+      let age = currentDate.getFullYear() - dob.getFullYear();
+
+      if (currentDate.getMonth() < dob.getMonth() || (currentDate.getMonth() === dob.getMonth() && currentDate.getDate() < dob.getDate())) {
+        age--;
+      }
+
+      return age;
+      }
+
+      const censusData = {
+        name,
+        address,
+        city,
+        numFemales,
+        numMales,
+        numMaleChildrenAbove21,
+        numMaleChildrenBelow21,
+        numFemaleChildrenAbove21,
+        numFemaleChildrenBelow21,
+        dateOfBirth,
+      }
+
+      if(calculateAge(dateOfBirth) > 21) {
+        // const existingData = JSON.parse(localStorage.getItem('censusData')) || [];
+        // existingData.push(censusData);
+        // localStorage.setItem('censusData', JSON.stringify(existingData));
+        const docRef = await addDoc (collection(db, 'data'), censusData);
+        alert("Census data has been submitted successfully!");
+        window.location.href = "census-tracker.html";
+      } else {
+        alert("User not upto 21 Years!");
+        window.location.href = "census-tracker.html";
+      }
+
+    }
+  </script>
+</body>
+</html>

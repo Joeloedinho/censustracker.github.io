@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Left Section -->
+      <div class="col-md-3 left-section">
+        <div class="admin-info text-center">
+          <h2 class="font-weight-bold mb-2">Admin Dashboard</h2>
+          <!-- <div id="adminDetails" class="admin-details">
+            <p id="adminName">Admin Name</p>
+            <a href="#" class="btn btn-danger btn-sm" onclick="logout()">Logout</a>
+          </div> -->
+        </div>
+        <div class="admin-functions">
+          <button class="btn btn-primary btn-block mb-2" onclick="generateUserList()">Generate User List</button>
+          <!-- <button class="btn btn-info btn-block" onclick="displayChildrenAbove21()">Display Children Above 21</button> -->
+
+          <button class="btn btn-primary btn-block mb-2" style="background-color: white; color: black" onclick="displayMaleChildrenAbove21()">Male Children Above 21</button>
+          <button class="btn btn-primary btn-block " style="background-color: white; color: black" onclick="displayFemaleChildrenAbove21()">Female Children Above 21</button>
+
+        </div>
+      </div>
+
+      <!-- Right Section -->
+      <div class="col-md-9 right-section">
+        <div class="right-top-section">
+          <h2 class="font-weight-bold mb-4 text-white bg-dark" style="padding: 20px; margin: 0px">Statistics</h2>
+        </div>
+        <div id="displayArea" class="display-area">
+          <!-- Display Area Content will be updated here -->
+        </div>
+        <div id="adminStats" class="admin-stats">
+          <!-- Admin Statistics Table will be displayed here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download PDF-->
+  <!-- Include jsPDF library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<!-- Include jsPDF AutoTable plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDF2ICAzg43NayIW4c4Ca58G9Mih2fI-JU",
+      authDomain: "censu-adbbe.firebaseapp.com",
+      projectId: "censu-adbbe",
+      storageBucket: "censu-adbbe.appspot.com",
+      messagingSenderId: "407667712322",
+      appId: "1:407667712322:web:dc3a1f21377f69d20f68db",
+      measurementId: "G-JBGE0CMNC7"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Function to download the entire "data" collection as a PDF
+  window.downloadPDF = async function () {
+  const userListData = await fetchUserDataFromFirestore();
+  const pdf = new window.jspdf.jsPDF();
+
+  // Define table columns and rows
+  const columns = [
+    "Name",
+    "Address",
+    "City",
+    "Num Females",
+    "Num Males",
+    "Num Male Children Above 21",
+    "Num Male Children Below 21",
+    "Num Female Children Above 21",
+    "Num Female Children Below 21",
+    "Age"
+  ];
+
+
+  const data = userListData.map(user => [
+    user.name,
+    user.address,
+    user.city,
+    user.numFemales,
+    user.numMales,
+    user.numMaleChildrenAbove21,
+    user.numMaleChildrenBelow21,
+    user.numFemaleChildrenAbove21,
+    user.numFemaleChildrenBelow21,
+    calculateAge(user.dateOfBirth)
+  ]);
+
+  // Add a table to the PDF using autoTable method with custom options
+  pdf.autoTable({
+    head: [columns],
+    body: data,
+    startY: 20, // Adjust the starting Y position
+    styles: {
+      fontSize: 10,
+      halign: 'center',
+      border: '1', // Add border for all cells
+    },
+    columnStyles: {
+      0: { cellWidth: 30 }, // Adjust column widths if needed
+      // Add more columnStyles as needed
+    },
+  });
+
+  // Save the PDF
+  pdf.save("user_list.pdf");
+}
+    // Function to fetch user data from Firestore
+    async function fetchUserDataFromFirestore() {
+      const userListData = [];
+      const querySnapshot = await getDocs(collection(db, 'data'));
+
+      querySnapshot.forEach((doc) => {
+        userListData.push(doc.data());
+      });
+
+      return userListData;
+    }
+
+    // Function to display user list table
+    function displayUserListTable(userListData) {
+      const displayArea = document.getElementById("displayArea");
+
+      const tableHTML = `
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>City</th>
+              <th>Num Females</th>
+              <th>Num Males</th>
+              <th>Num Male Children Above 21</th>
+              <th>Num Male Children Below 21</th>
+              <th>Num Female Children Above 21</th>
+              <th>Num Female Children Below 21</th>
+              <th>Age</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${userListData.map(user => `
+              <tr>
+                <td>${user.name}</td>
+                <td>${user.address}</td>
+                <td>${user.city}</td>
+                <td>${user.numFemales}</td>
+                <td>${user.numMales}</td>
+                <td>${user.numMaleChildrenAbove21}</td>
+                <td>${user.numMaleChildrenBelow21}</td>
+                <td>${user.numFemaleChildrenAbove21}</td>
+                <td>${user.numFemaleChildrenBelow21}</td>
+                <td>${calculateAge(user.dateOfBirth)}</td> <!-- Display the age -->
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <!-- Download PDF Button -->
+          <div style="float: right; margin: 10px">
+            <button class="btn btn-success" onclick="downloadPDF()">
+              <i class="fas fa-download"></i> Download Users
+            </button>
+          </div>
+
+      `;
+
+      displayArea.innerHTML = tableHTML;
+    }
+
+    // Function to calculate age based on the date of birth
+    function calculateAge(dateOfBirth) {
+    const currentDate = new Date();
+    const dob = new Date(dateOfBirth);
+    let age = currentDate.getFullYear() - dob.getFullYear();
+
+    if (currentDate.getMonth() < dob.getMonth() || (currentDate.getMonth() === dob.getMonth() && currentDate.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    return age;
+    }
+
+    // Function to generate user list
+    window.generateUserList = async function () {
+      const userListData = await fetchUserDataFromFirestore();
+      displayUserListTable(userListData);
+    }
+
+    // Function to fetch male children above 21 data from Firestore per city
+    async function fetchMaleChildrenAbove21DataPerCity() {
+      const maleChildrenAbove21DataPerCity = {};
+      const querySnapshot = await getDocs(collection(db, 'data'));
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const city = data.city;
+
+        if (!maleChildrenAbove21DataPerCity[city]) {
+          maleChildrenAbove21DataPerCity[city] = {
+            numMales: 0,
+          };
+        }
+
+        // Check condition for male children above 21 and update count
+        if (data.numMaleChildrenAbove21 > 0) {
+          maleChildrenAbove21DataPerCity[city].numMales += parseInt(data.numMaleChildrenAbove21);
+        }
+      });
+
+      return maleChildrenAbove21DataPerCity;
+    }
+
+    // Function to fetch female children above 21 data from Firestore per city
+    async function fetchFemaleChildrenAbove21DataPerCity() {
+      const femaleChildrenAbove21DataPerCity = {};
+      const querySnapshot = await getDocs(collection(db, 'data'));
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const city = data.city;
+
+        if (!femaleChildrenAbove21DataPerCity[city]) {
+          femaleChildrenAbove21DataPerCity[city] = {
+            numFemales: 0,
+          };
+        }
+
+        // Check condition for female children above 21 and update count
+        if (data.numFemaleChildrenAbove21 > 0) {
+          femaleChildrenAbove21DataPerCity[city].numFemales += parseInt(data.numFemaleChildrenAbove21);
+        }
+      });
+
+      return femaleChildrenAbove21DataPerCity;
+    }
+
+    // Function to display male children above 21 data
+    window.displayMaleChildrenAbove21 = async function () {
+      const adminStats = document.getElementById("displayArea");
+      const maleChildrenAbove21DataPerCity = await fetchMaleChildrenAbove21DataPerCity();
+
+      let statsTableHTML = '';
+
+      statsTableHTML += `
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Place of Birth</th>
+              <th>Number of Males Above 21</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(maleChildrenAbove21DataPerCity).map(([city, data]) => `
+              <tr>
+                <td>${city}</td>
+                <td>${parseInt(data.numMales)}</td>
+              </tr>
+            `).join('')}
+            <tr>
+              <td><strong>Total</strong></td>
+              <td><strong>${Object.values(maleChildrenAbove21DataPerCity).reduce((total, data) => total + parseInt(data.numMales), 0)}</strong></td>
+
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      adminStats.innerHTML = statsTableHTML;
+    }
+
+    // Function to display female children above 21 data
+    window.displayFemaleChildrenAbove21 = async function () {
+      const adminStats = document.getElementById("displayArea");
+      const femaleChildrenAbove21DataPerCity = await fetchFemaleChildrenAbove21DataPerCity();
+
+      let statsTableHTML = '';
+
+      statsTableHTML += `
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Place of Birth</th>
+              <th>Number of Females ABove 21</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(femaleChildrenAbove21DataPerCity).map(([city, data]) => `
+              <tr>
+                <td>${city}</td>
+                <td>${parseInt(data.numFemales)}</td>
+              </tr>
+            `).join('')}
+            <tr>
+              <td><strong>Total</strong></td>
+              <td><strong>${Object.values(femaleChildrenAbove21DataPerCity).reduce((total, data) => total + parseInt(data.numFemales), 0)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      adminStats.innerHTML = statsTableHTML;
+    }
+
+  </script>
+</body>
+</html>
